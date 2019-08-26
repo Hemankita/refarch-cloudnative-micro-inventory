@@ -2,42 +2,41 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: micro-inventory-populate-mysql
-  labels:
-    heritage: micro-inventory
 spec:
   template:
     metadata:
       name: micro-inventory-populate-mysql
       labels:
-        heritage: micro-inventory
+        app: micro-inventory
     spec:
       restartPolicy: Never
       initContainers:
       - name: test-mysql
         image: mysql:5.7.14
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         command:
         - "/bin/bash"
         - "-c"
         - "until mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} -e status; do echo waiting for mysql; sleep 1; done"
         resources:
-          requests:
-            memory: "64Mi"
           limits:
-            memory: "384Mi"
+            memory: 384Mi
+          requests:
+            memory: 64Mi
         securityContext:
-          runAsUser: 2000
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
         env:
-        - name: MYSQL_HOST
-          value: inventory-mysql
-        - name: MYSQL_PORT
-          value: 3306
-        - name: MYSQL_DATABASE
-          value: inventorydb
-        - name: MYSQL_USER
-          value: dbuser
+          - name: MYSQL_HOST
+            value: "mysql"
+          - name: MYSQL_PORT
+            value: "3306"
+          - name: MYSQL_DATABASE
+            value: "inventorydb"
+          - name: MYSQL_USER
+            value: "dbuser"
+          - name: MYSQL_PASSWORD
+            value: "password"
       containers:
       - name: populate-mysql
         image: mysql:5.7.14
@@ -51,23 +50,24 @@ spec:
         command: ["/bin/bash", "-c"]
         args: ["cp /config/mysql_data.sql /db-data; sed -i \"s/inventorydb/${MYSQL_DATABASE}/g\" /db-data/mysql_data.sql; until mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} </db-data/mysql_data.sql; do echo \"waiting for mysql\"; sleep 1; done; echo \"Loaded data into database\";"]
         resources:
-          requests:
-            memory: "64Mi"
           limits:
-            memory: "384Mi"
+            memory: 384Mi
+          requests:
+            memory: 64Mi
         securityContext:
-          runAsUser: 2000
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
         env:
-        - name: MYSQL_HOST
-          value: mysql
-        - name: MYSQL_PORT
-          value: 3306
-        - name: MYSQL_DATABASE
-          value: inventorydb
-        - name: MYSQL_USER
-          value: dbuser
+          - name: MYSQL_HOST
+            value: "mysql"
+          - name: MYSQL_PORT
+            value: "3306"
+          - name: MYSQL_DATABASE
+            value: "inventorydb"
+          - name: MYSQL_USER
+            value: "dbuser"
+          - name: MYSQL_PASSWORD
+            value: "password"
       volumes:
       - name: config
         configMap:
